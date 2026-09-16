@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GroupSync — Day -2 Snapshot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  :root {
+    --bg: #0A0D11;
+    --panel: #12161C;
+    --panel-2: #171C23;
+    --border: #262D36;
+    --border-soft: #1C222A;
+    --text: #E7ECF1;
+    --text-dim: #8D98A5;
+    --text-faint: #5B6570;
+    --red: #EF5B4E;
+    --red-bg: #2A1512;
+    --red-border: #4A241E;
+    --amber: #E7A53E;
+    --amber-bg: #241D0F;
+    --amber-border: #453619;
+    --gray: #6B7480;
+    --gray-bg: #171A1E;
+    --gray-border: #262B32;
+    --teal: #45BC91;
+    --teal-bg: #0F2019;
+    --blue: #5FA8E0;
+    --radius: 6px;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #F4F5F7;
+    --panel: #FFFFFF;
+    --panel-2: #FBFBFC;
+    --border: #DCE0E5;
+    --border-soft: #E6E9EC;
+    --text: #191D22;
+    --text-dim: #565F6A;
+    --text-faint: #89919B;
+    --red: #C43D30;
+    --red-bg: #FCEEEC;
+    --red-border: #F0C7C0;
+    --amber: #A66A12;
+    --amber-bg: #FBF1DF;
+    --amber-border: #EAD3A2;
+    --gray: #8A93A0;
+    --gray-bg: #F1F2F4;
+    --gray-border: #E1E4E8;
+    --teal: #1F8A63;
+    --teal-bg: #E9F6F0;
+    --blue: #2C6FA6;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    padding: 28px 20px 64px;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  a { color: var(--blue); }
+
+  /* ---------- header ---------- */
+
+  header.top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 24px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .brand h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .brand .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    display: inline-block;
+    animation: pulse 2.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .brand .dot { animation: none; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,91,78,0.35); }
+    50% { opacity: 0.55; box-shadow: 0 0 0 5px rgba(239,91,78,0); }
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    margin-top: 4px;
+  }
+
+  .snapshot-meta {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.6;
+  }
+
+  .snapshot-meta strong {
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  /* ---------- stat tiles ---------- */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .tile {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+
+  .tile .label {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .tile .value {
+    font-family: var(--mono);
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .tile .value.warn { color: var(--amber); }
+  .tile .value.crit { color: var(--red); }
+  .tile .value.ok { color: var(--teal); }
+
+  .tile .sub {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  /* ---------- section shells ---------- */
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+    align-items: start;
+  }
+
+  section.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-head h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .card-head .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+
+  /* ---------- alerts ---------- */
+
+  .alerts { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  .alert {
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 13px 15px;
+    background: var(--panel-2);
+  }
+
+  .alert.critical { border-color: var(--red-border); background: var(--red-bg); }
+  .alert.warning  { border-color: var(--amber-border); background: var(--amber-bg); }
+  .alert.dismissed { border-color: var(--gray-border); background: var(--gray-bg); opacity: 0.92; }
+
+  .alert-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+
+  .sev {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  .critical .sev { background: rgba(239,91,78,0.16); color: var(--red); }
+  .warning .sev  { background: rgba(231,165,62,0.18); color: var(--amber); }
+  .dismissed .sev { background: rgba(107,116,128,0.18); color: var(--gray); }
+
+  .alert-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .alert-desc {
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-bottom: 9px;
+  }
+
+  .dismissed .alert-desc { color: var(--text-dim); }
+
+  .rule {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-dim);
+    background: rgba(0,0,0,0.18);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    white-space: pre;
+    margin-bottom: 9px;
+  }
+
+  :root[data-theme="light"] .rule { background: rgba(0,0,0,0.035); }
+
+  .rule .arrow { color: var(--text-faint); }
+
+  .next {
+    font-size: 12.5px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 6px;
+  }
+
+  .next .tag {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-faint);
+    padding-top: 1px;
+  }
+
+  .dismissed .next .tag { color: var(--gray); }
+
+  /* ---------- team panel ---------- */
+
+  .team-list { padding: 6px 0; }
+
+  .member {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .member:last-child { border-bottom: none; }
+
+  .member-name {
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .member-task {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 2px;
+  }
+
+  .member-right { text-align: right; flex-shrink: 0; }
+
+  .member-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .status-confirmed { background: rgba(69,188,145,0.14); color: var(--teal); }
+  .status-unconfirmed { background: rgba(239,91,78,0.14); color: var(--red); }
+
+  .member-last {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 5px;
+  }
+
+  /* ---------- workload bar ---------- */
+
+  .workload {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .wl {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .wl .n {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .wl .l {
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  .wl.confirmed .n { color: var(--teal); }
+  .wl.unowned .n { color: var(--red); }
+
+  /* ---------- tables ---------- */
+
+  section.card + section.card { margin-top: 14px; }
+
+  .tbl-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-faint);
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td.mono, th.mono { font-family: var(--mono); font-size: 12px; }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.02em;
+    display: inline-block;
+  }
+
+  .pill-owned { background: rgba(69,188,145,0.14); color: var(--teal); }
+  .pill-stalled { background: rgba(231,165,62,0.18); color: var(--amber); }
+  .pill-unowned { background: rgba(239,91,78,0.14); color: var(--red); }
+  .pill-yes { background: rgba(95,168,224,0.15); color: var(--blue); }
+  .pill-no { background: var(--gray-bg); color: var(--text-faint); }
+  .pill-locked { background: rgba(69,188,145,0.14); color: var(--teal); }
+  .pill-mismatch { background: rgba(239,91,78,0.14); color: var(--red); }
+  .pill-notdef { background: var(--gray-bg); color: var(--text-faint); }
+
+  .never { color: var(--text-faint); font-style: italic; }
+
+  /* ---------- contract header stat ---------- */
+
+  .contract-stat {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--amber);
+  }
+
+  /* ---------- footer ---------- */
+
+  footer {
+    margin-top: 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    padding: 20px 22px;
+  }
+
+  .philosophy {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .philosophy strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .risk-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .risk-box .rlabel {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+  }
+
+  .risk-box .rval {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .risk-box.now .rval { color: var(--red); }
+  .risk-box.fixed .rval { color: var(--teal); }
+
+  .risk-box .rnote {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 5px;
+  }
+
+  /* ---------- responsive ---------- */
+
+  @media (max-width: 920px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .panels { grid-template-columns: 1fr; }
+    .workload { grid-template-columns: 1fr; }
+    .risk-grid { grid-template-columns: 1fr; }
+    .snapshot-meta { text-align: left; }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>GroupSync</h1>
+      </div>
+      <div class="subtitle">Library Management System — DBMS mini-project · 5 members</div>
+    </div>
+    <div class="snapshot-meta">
+      snapshot: <strong>Day -2, 16:40</strong><br>
+      watching since: <strong>Day -6</strong><br>
+      deadline: <strong>Sunday, 11:59 PM</strong>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="tile">
+      <div class="label">Deadline countdown</div>
+      <div class="value warn" id="countdown">58:00:00</div>
+      <div class="sub">to Sunday 11:59 PM</div>
+    </div>
+    <div class="tile">
+      <div class="label">Unowned tasks</div>
+      <div class="value crit">2</div>
+      <div class="sub">Report (reverted) · Testing (never claimed)</div>
+    </div>
+    <div class="tile">
+      <div class="label">Members silent 48h+</div>
+      <div class="value crit">1</div>
+      <div class="sub">no activity logged since assignment</div>
+    </div>
+    <div class="tile">
+      <div class="label">Contract locked</div>
+      <div class="value warn">0 / 4</div>
+      <div class="sub">required by Day -1</div>
+    </div>
+  </section>
+
+  <section class="panels">
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Active alerts</h2>
+        <span class="count">3 critical · 2 warning · 1 dismissed</span>
+      </div>
+      <div class="alerts">
+
+        <div class="alert critical">
+          <div class="alert-top">
+            <span class="sev">CRITICAL</span>
+            <span class="alert-id">ALERT-01</span>
+          </div>
+          <div class="alert-desc">DB Schema has logged zero commits in the 26 hours since its last recorded activity, and it sits on the critical path.</div>
+          <div class="rule">task.critical_path=true<span class="arrow"> AND </span>commits_since_claim=0<span class="arrow"> AND </span>hours_since_activity&gt;24<span class="arrow"> → </span>CRITICAL<span class="arrow"> → </span>require status checkpoint</div>
+          <div class="next"><span class="tag">next:</span> Rohan posts a commit or a revised schema ETA in the team channel before 20:00 tonight.</div>
+        </div>
+
+        <div class="alert critical">
+          <div class="alert-top">
+            <span class="sev">CRITICAL</span>
+            <span class="alert-id">ALERT-02</span>
+          </div>
+          <div class="alert-desc">Testing has had no owner since the task list was created six days ago, and it sits on the critical path.</div>
+          <div class="rule">task.claimed=false<span class="arrow"> AND </span>task.critical_path=true<span class="arrow"> AND </span>hours_since_creation&gt;72<span class="arrow"> → </span>CRITICAL<span class="arrow"> → </span>assign owner</div>
+          <div class="next"><span class="tag">next:</span> Name an owner for Testing in the next check-in — it cannot stay open past today.</div>
+        </div>
+
+        <div class="alert critical">
+          <div class="alert-top">
+            <span class="sev">CRITICAL</span>
+            <span class="alert-id">ALERT-03</span>
+          </div>
+          <div class="alert-desc">Two critical-path tasks — DB Schema and Testing — are simultaneously non-productive, which blocks any integration or test pass from starting.</div>
+          <div class="rule">count(critical_path tasks in {STALLED, UNOWNED})&gt;=2<span class="arrow"> → </span>CRITICAL<span class="arrow"> → </span>full-team sync</div>
+          <div class="next"><span class="tag">next:</span> Hold a 15-minute stand-up today covering only these two tasks; postpone everything else.</div>
+        </div>
+
+        <div class="alert warning">
+          <div class="alert-top">
+            <span class="sev">WARNING</span>
+            <span class="alert-id">ALERT-04</span>
+          </div>
+          <div class="alert-desc">Report was assigned six days ago but was never opened or confirmed, and has now reverted to unowned.</div>
+          <div class="rule">assignment.confirmed=false<span class="arrow"> AND </span>hours_since_assignment&gt;24<span class="arrow"> → </span>ASSIGNED→UNOWNED<span class="arrow"> → </span>WARNING</div>
+          <div class="next"><span class="tag">next:</span> Send Report directly to Sneha and get an explicit yes/no — don't treat silence as acknowledgment.</div>
+        </div>
+
+        <div class="alert warning">
+          <div class="alert-top">
+            <span class="sev">WARNING</span>
+            <span class="alert-id">ALERT-05</span>
+          </div>
+          <div class="alert-desc">Zero of four shared data fields are locked between the frontend and the schema draft, and the Day -1 contract deadline is 34 hours away.</div>
+          <div class="rule">contract.locked&lt;contract.total<span class="arrow"> AND </span>hours_to_contract_deadline&lt;40<span class="arrow"> → </span>WARNING<span class="arrow"> → </span>schedule lock session</div>
+          <div class="next"><span class="tag">next:</span> Put a 30-minute contract-lock call on the calendar today, before either side writes more integration code.</div>
+        </div>
+
+        <div class="alert dismissed">
+          <div class="alert-top">
+            <span class="sev">DISMISSED</span>
+            <span class="alert-id">ALERT-06</span>
+          </div>
+          <div class="alert-desc">A 3-hour campus wifi outage on Day -5 was evaluated as a possible risk to the timeline.</div>
+          <div class="rule">outage.duration=3h<span class="arrow"> AND </span>slack_remaining_at_outage&gt;=58h<span class="arrow"> → </span>dismiss<span class="arrow"> → </span>no action required</div>
+          <div class="next"><span class="tag">why:</span> 58+ hours of slack remained when the outage occurred; it had zero measured effect on the critical path. Logged here as the record against it.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Team</h2>
+        <span class="count">5 members</span>
+      </div>
+      <div class="team-list">
+
+        <div class="member">
+          <div>
+            <div class="member-name">Ananya</div>
+            <div class="member-task">Task coordination · no dev task assigned</div>
+          </div>
+          <div class="member-right">
+            <span class="member-status status-confirmed">CONFIRMED</span>
+            <div class="member-last">active 1h ago</div>
+          </div>
+        </div>
+
+        <div class="member">
+          <div>
+            <div class="member-name">Rohan</div>
+            <div class="member-task">DB Schema · claimed Day -5</div>
+          </div>
+          <div class="member-right">
+            <span class="member-status status-confirmed">CONFIRMED</span>
+            <div class="member-last">active 26h ago</div>
+          </div>
+        </div>
+
+        <div class="member">
+          <div>
+            <div class="member-name">Sneha</div>
+            <div class="member-task">Report · reverted to unowned</div>
+          </div>
+          <div class="member-right">
+            <span class="member-status status-unconfirmed">UNCONFIRMED</span>
+            <div class="member-last">no activity since assignment</div>
+          </div>
+        </div>
+
+        <div class="member">
+          <div>
+            <div class="member-name">Karthik</div>
+            <div class="member-task">Frontend UI · claimed Day -6</div>
+          </div>
+          <div class="member-right">
+            <span class="member-status status-confirmed">CONFIRMED</span>
+            <div class="member-last">active 4h ago</div>
+          </div>
+        </div>
+
+        <div class="member">
+          <div>
+            <div class="member-name">Ishaan</div>
+            <div class="member-task">Backend / Integration · claimed Day -6</div>
+          </div>
+          <div class="member-right">
+            <span class="member-status status-confirmed">CONFIRMED</span>
+            <div class="member-last">active 3h ago</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </section>
+
+  <section class="workload">
+    <div class="wl">
+      <span class="l">Assigned, unconfirmed</span>
+      <span class="n">0</span>
+    </div>
+    <div class="wl confirmed">
+      <span class="l">Claimed &amp; confirmed</span>
+      <span class="n">3</span>
+    </div>
+    <div class="wl unowned">
+      <span class="l">Unowned</span>
+      <span class="n">2</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Task board</h2>
+      <span class="count">5 tasks</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Assigned to</th>
+            <th class="mono">Claimed</th>
+            <th class="mono">Last activity</th>
+            <th>Critical path</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Report</td>
+            <td class="never">— (was Sneha)</td>
+            <td class="mono never">never</td>
+            <td class="mono never">none since assignment</td>
+            <td><span class="pill pill-no">NO</span></td>
+            <td><span class="pill pill-unowned">UNOWNED</span></td>
+          </tr>
+          <tr>
+            <td>DB Schema</td>
+            <td>Rohan</td>
+            <td class="mono">Day -5, 20:00</td>
+            <td class="mono">Day -3, 14:40 (msg, 0 commits)</td>
+            <td><span class="pill pill-yes">YES</span></td>
+            <td><span class="pill pill-stalled">CLAIMED — STALLED</span></td>
+          </tr>
+          <tr>
+            <td>Frontend UI</td>
+            <td>Karthik</td>
+            <td class="mono">Day -6, 11:00</td>
+            <td class="mono">Day -2, 12:00</td>
+            <td><span class="pill pill-yes">YES</span></td>
+            <td><span class="pill pill-owned">CLAIMED — ACTIVE</span></td>
+          </tr>
+          <tr>
+            <td>Backend / Integration</td>
+            <td>Ishaan</td>
+            <td class="mono">Day -6, 11:30</td>
+            <td class="mono">Day -2, 13:15</td>
+            <td><span class="pill pill-yes">YES</span></td>
+            <td><span class="pill pill-owned">CLAIMED — ACTIVE</span></td>
+          </tr>
+          <tr>
+            <td>Testing</td>
+            <td class="never">— unassigned —</td>
+            <td class="mono never">never</td>
+            <td class="mono never">none</td>
+            <td><span class="pill pill-yes">YES</span></td>
+            <td><span class="pill pill-unowned">UNOWNED — never claimed</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Integration contract</h2>
+      <span class="contract-stat">0 of 4 locked — required by Day -1</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th class="mono">Frontend field</th>
+            <th class="mono">Schema draft field</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Book</td>
+            <td class="mono">bookTitle</td>
+            <td class="mono">book_name</td>
+            <td><span class="pill pill-mismatch">MISMATCH</span></td>
+          </tr>
+          <tr>
+            <td>Member</td>
+            <td class="mono">memberId</td>
+            <td class="mono">user_id</td>
+            <td><span class="pill pill-mismatch">MISMATCH</span></td>
+          </tr>
+          <tr>
+            <td>Issue date</td>
+            <td class="mono">issueDate</td>
+            <td class="mono never">— not defined —</td>
+            <td><span class="pill pill-notdef">NOT DEFINED</span></td>
+          </tr>
+          <tr>
+            <td>Return date</td>
+            <td class="mono">dueDate</td>
+            <td class="mono never">— not defined —</td>
+            <td><span class="pill pill-notdef">NOT DEFINED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div class="philosophy">
+      GroupSync tracks <strong>state and duration</strong>, never intent or blame — it does not say a task is overdue, that someone is slow, or that the wifi caused delays. It reports what is true right now and how long it has been true. <strong>Silence is a state, not an assumption.</strong>
+    </div>
+    <div class="risk-grid">
+      <div class="risk-box now">
+        <div class="rlabel">If nothing changes</div>
+        <div class="rval">High penalty risk</div>
+        <div class="rnote">2 unowned critical-path tasks + 0/4 locked fields at the Day -1 checkpoint → likely late submission → 10% penalty exposure.</div>
+      </div>
+      <div class="risk-box fixed">
+        <div class="rlabel">If all 6 open alerts are resolved now</div>
+        <div class="rval">Near-zero risk</div>
+        <div class="rnote">58 hours of slack is still fully available for integration and testing — the window has not closed yet.</div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var totalSeconds = 58 * 3600;
+    var el = document.getElementById('countdown');
+
+    function render() {
+      var h = Math.floor(totalSeconds / 3600);
+      var m = Math.floor((totalSeconds % 3600) / 60);
+      var s = totalSeconds % 60;
+      function pad(n) { return n.toString().padStart(2, '0'); }
+      el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+    }
+
+    render();
+    setInterval(function () {
+      if (totalSeconds > 0) {
+        totalSeconds -= 1;
+        render();
+      }
+    }, 1000);
+  })();
+</script>
+
+</body>
+</html>
